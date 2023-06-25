@@ -1,0 +1,130 @@
+﻿using IslemKatmani;
+using System;
+using System.Data;
+using System.Windows.Forms;
+using Microsoft.Office.Core;
+using Microsoft.Office.Interop;
+
+namespace Apartman_Yonetim_Sistemi
+{
+    public partial class DaireGoruntule : Form
+    {
+        string filtre;
+        string daire;
+        DataTable dt;
+        int en, boy;
+
+        public DaireGoruntule()
+        {
+            InitializeComponent();
+            en = this.Size.Width;
+            boy = this.Size.Height;
+            dt = VeriIslemleri.TabloDoldur("Daire", VeriIslemleri.BilgileriGetir("Daire", "DaireNo"));
+            dgFiltre.DataSource = dt;
+            if (dgFiltre.Rows[0].Cells[0].Value != null)
+                daire = dgFiltre.Rows[0].Cells[0].Value.ToString();
+        }
+
+        private void rbDaireDurum_CheckedChanged(object sender, EventArgs e)
+        {
+            filtre = ((RadioButton)sender).Tag.ToString();
+        }
+
+        private void rbDaireSahibi_CheckedChanged(object sender, EventArgs e)
+        {
+            filtre = ((RadioButton)sender).Tag.ToString();
+        }
+
+        private void rbDaireSakini_CheckedChanged(object sender, EventArgs e)
+        {
+            filtre = ((RadioButton)sender).Tag.ToString();
+        }
+        private void dgFiltre_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            daire = dgFiltre.CurrentRow.Cells["Daire Numarası"].Value.ToString();
+        }
+
+        private void btnFiltrele_Click(object sender, EventArgs e)
+        {
+            if (!rbDaireDurum.Checked && !rbDaireSahibi.Checked && !rbDaireSakini.Checked || txtFiltre.Text == "")
+            {
+                MessageBox.Show("Filtreleme için bir aranan değer giriniz!");
+                dgFiltre.DataSource = dt;
+            }
+            else
+                dgFiltre.DataSource = VeriIslemleri.TabloDoldur("Daire", VeriIslemleri.Filtre("Daire", filtre, aranan: textBox1.Text));
+            dgFiltre.Update();
+            rbDaireDurum.Checked = true;
+            rbDaireDurum.Checked = false;
+            txtFiltre.Clear();
+        }
+
+        private void btnDaireEkle_Click(object sender, EventArgs e)
+        {
+            DaireEkle de = new DaireEkle();
+            de.ShowDialog();
+            dt = VeriIslemleri.TabloDoldur("Daire", VeriIslemleri.BilgileriGetir("Daire", "DaireNo"));
+            dgFiltre.DataSource = dt;
+            dgFiltre.Update();
+            if (dgFiltre.Rows[0].Cells[0].Value != null)
+                daire = dgFiltre.Rows[0].Cells[0].Value.ToString();
+        }
+
+        private void btnDaireDuzenle_Click(object sender, EventArgs e)
+        {
+            if (daire == null)
+                MessageBox.Show("Lütfen tablodan düzeltilecek değeri seçiniz!");
+            else
+            {
+                DaireEkle de = new DaireEkle(VeriIslemleri.BilgileriAl("Daire", "DaireNo", daire));
+                de.ShowDialog();
+                dt = VeriIslemleri.TabloDoldur("Daire", VeriIslemleri.BilgileriGetir("Daire", "DaireNo"));
+                dgFiltre.DataSource = dt;
+                dgFiltre.Update();
+            }
+        }
+
+        private void btnDaireSil_Click(object sender, EventArgs e)
+        {
+            bool durum = false;
+            if (daire == null)
+                MessageBox.Show("Lütfen tablodan silinecek değeri seçiniz!");
+            else
+            {
+                DialogResult cevap = MessageBox.Show(daire + " Numaralı Daire Silinecek. Silmek İstediğinize Emin Misiniz?", "Daire Silinecek", MessageBoxButtons.OKCancel);
+                if (cevap.ToString() == "OK")
+                    durum = VeriIslemleri.VeriSil("Daire", "DaireNo", daire);
+            }
+            if (durum)
+            {
+                MessageBox.Show("Silme işlemi başarılı!");
+                dt = VeriIslemleri.TabloDoldur("Daire", VeriIslemleri.BilgileriGetir("Daire", "DaireNo"));
+                dgFiltre.DataSource = dt;
+                dgFiltre.Update();
+            }
+        }
+
+        private void btnRaporla_Click(object sender, EventArgs e) => ExcelIslemleri.ExportToExcel(dgFiltre);
+
+        private void btnEskiDaire_Click(object sender, EventArgs e)
+        {
+            EskiDaireGoruntule edg = new EskiDaireGoruntule();
+            edg.ShowDialog();
+        }
+        private void DaireGoruntule_Resize(object sender, EventArgs e)
+        {
+            int boyfark = this.Size.Height - boy;
+            int enfark = this.Size.Width - en;
+            if (this.Size.Width > en || this.Size.Width < en)
+            {
+                dgFiltre.Width += enfark;
+                en = this.Size.Width;
+            }
+            if (this.Size.Height > boy || this.Size.Height < boy)
+            {
+                dgFiltre.Height += boyfark;
+                boy = this.Size.Height;
+            }
+        }
+    }
+}
